@@ -1,9 +1,3 @@
-# CMPT384-2019-07
-
-# Yu Gu yug242 
-# Bo Wu bow770
- 
-
 ## How to launch
 
 Simply cd into the file location and run python3 http server on your computer locally.
