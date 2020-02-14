@@ -1,0 +1,84 @@
+/*
+Wu,Bo
+NSID: bow770
+Student Number: 11197211
+
+Gu,Yu
+NSID: yug242
+Student Number: 11195367
+ */
+body {
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 25px 50px 75px 100px;
+  width: 2000px;
+  line-height: 1.45em;
+}
+
+/* Checkboxes style */
+#selections{
+  position: absolute;
+  margin-left: 50px;
+  top: 20px;
+  left: 10px;
+}
+
+/* Button Selected style */
+#Selected{
+ position: absolute;
+  top: 370px;
+  left: 60px;
+}
+
+/* Button Clean style */
+#Clean{
+  position: absolute;
+  top: 370px;
+  left: 130px;
+}
+
+/* position of parallel coordinates*/
+#Parcoord1 {
+  position: relative;
+  left: 100px;
+  width: 850px;
+}
+
+/* data table styles */
+#grid {
+  position: absolute;
+  top:550px;
+  left:10px;
+  height: 240px;}
+  .row{ clear: left; font-size: 14px; line-height: 24px; height: 24px; }
+  .row:nth-child(even) { background: rgba(0,0,0,0.05); }
+  .header { font-weight: bold; }
+  .cell { float: left; overflow: hidden; white-space: nowrap; width: 140px; height: 18px; }
+  .col-0 { width: 120px; }
+
+/* bar chart style */
+.bar:hover {
+  fill: lightblue;
+}
+
+.chart {
+  position: absolute;
+  top: 0;
+  left:1000px;
+  bottom: 550px;
+}
+
+.axis text {
+  font: 11px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}

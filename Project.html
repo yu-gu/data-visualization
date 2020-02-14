@@ -1,0 +1,326 @@
+<!--
+Wu,Bo
+NSID: bow770
+Student Number: 11197211
+
+Gu,Yu
+NSID: yug242
+Student Number: 11195367
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Project Visualization</title>
+    <link rel="stylesheet" type="text/css" href="lib/style.css">
+    <link rel="stylesheet" type="text/css" href="lib/d3.parcoords.css">
+    <script src="lib/d3.min.js"></script>
+    <script src="lib/d3.parcoords.js"></script>
+    <script src="lib/divgrid.js"></script>
+</head>
+
+<body>
+    <p id="selections"></p>
+    <button id="Selected">Selected</button>
+    <button id="Clean">Clean</button>
+    <p id="ParcoordVis"></p>
+    <p id="ChartViz"></p>
+    <div id="grid" style="height:500px"></div>
+</body>
+
+<script>
+    var dataset;
+    var subjects = [];
+    var subjects_dict = {};
+    var colors = ['BlueViolet', 'brown','gold','red', 'orange', 'yellow', 'DarkGreen', 'blue', 'CadetBlue', 'Fuchsia','black','HotPink','Navy','SandyBrown','Tan','Plum'];
+
+    d3.dsv(";")("./film.csv",function (data) {
+        // A dictionary has each row and discard first row of data because it is useless
+        dataset = data.slice(1,);
+
+        // If there are some missing data, fill in with something
+        dataset.forEach(function(d) {
+            if(d.Length == ""){d.Length = "0";}
+            if(d.Subject == ""){d.Subject = "N/A"}
+            if(d.Actor == ""){d.Actor = "N/A"}
+            if(d.Actress == ""){d.Actress = "N/A"}
+            if(d.Director == ""){d.Director = "N/A"}
+            if(d.Popularity == ""){d.Popularity = 0}
+            if(d.Awards == ""){d.Awards = "N/A"}
+            d.Popularity = parseFloat(d.Popularity)
+        });
+
+
+        /********************/
+        // Create a subject dictionary, and use subject name as key, their color as value
+        subjects.push(dataset[0].Subject);
+        for (var i = 0; i < dataset.length; i++) {
+                  if(!subjects.includes(dataset[i].Subject)){
+                      subjects.push(dataset[i].Subject);
+                  }
+            }
+
+        for (var i = 0; i < subjects.length; i++) {
+                  var tempHTML = document.getElementById("selections").innerHTML;
+                  document.getElementById("selections").innerHTML = tempHTML+`<input type= 'checkbox' id= '${i}' name= 'subject' value= ${subjects[i]} /> ${subjects[i]} <br>`;
+                  subjects_dict[subjects[i]] = colors[i];
+            }
+        /********************/
+
+        //To create an initial parallel coordinates
+        generateParcoords(dataset);
+
+         //To create an initial bar chart
+        var arrayAP = Arr_AveragePopu(subjects,dataset);
+        generateBarchart(arrayAP);
+
+        /********************/
+        //Create checkboxs for each subjects
+        d3.select('#Selected').on("click", function(){
+            var arr = [];
+            var SelectedData = [];
+            var items = document.getElementsByName("subject");
+            for (i = 0; i < items.length; i++) {
+                if (items[i].checked) {
+                    arr.push(items[i].value);
+                }
+            }
+            for (i = 0; i < arr.length; i++){
+                for (var j = 0; j < dataset.length; j++){
+                  if(arr[i] == dataset[j].Subject){
+                      SelectedData.push(dataset[j]);
+                  }
+                  else if(arr[i] == "Science" && dataset[j].Subject == "Science Fiction"){
+                      SelectedData.push(dataset[j]);
+                  }
+                }
+            }
+
+            d3.select('#Parcoord1').remove();
+            d3.select('#Barchart2').remove();
+
+            //generate parallel coordinates for selected subjects
+            generateParcoords(SelectedData);
+
+            //generate bar chart for selected subjects
+            generateBarchart(Arr_AveragePopu(subjects,SelectedData));
+        });
+
+        //Clean all checkboxs, and return to initial states
+        d3.select('#Clean').on("click", function(){
+            for (var i = 0; i < subjects.length; i++) {
+                document.getElementById(i).checked = false;
+            }
+            d3.select('#Parcoord1').remove();
+            d3.select('#Barchart2').remove();
+
+            //generate parallel coordinates for selected subjects
+            generateParcoords(dataset);
+
+            //generate bar chart for selected subjects
+            generateBarchart(Arr_AveragePopu(subjects,dataset));
+        });
+
+        /********************/
+    });
+
+    /********************/
+    //The function to give top 10 datas by their popularity
+    function topDatas(data) {
+        var topDatas = new Array(20);
+        if(data.length >= 20){
+            for (var i = 0; i < topDatas.length; i++) {
+				  topDatas[i] = data[i];
+            }
+            for (var i = 0; i < topDatas.length; i++){
+               for (var j = 0; j < data.length; j++){
+                   if (data[j].Popularity > topDatas[i].Popularity && !topDatas.includes(data[j])){
+                       topDatas[i] = data[j]
+                   }
+               }
+            }
+            return topDatas;
+        }
+        else{
+            return data;
+        }
+    }
+     /********************/
+
+     /********************/
+    //The function to give each Subjects' average popularity
+    function Arr_AveragePopu(subjects,data){
+        var popularity_data = [];
+        for (var i = 0; i < subjects.length; i++){
+            var temp_dict = {};
+            var counter = 0;
+            var total = 0;
+            for (var j = 0; j < data.length; j++) {
+              if(subjects[i] == data[j].Subject){
+                total = total + data[j].Popularity;
+                counter = counter + 1;
+              }
+            }
+            temp_dict['Subject'] = subjects[i];
+            temp_dict['Average'] = total / counter;
+            popularity_data.push(temp_dict)
+          }
+
+        return popularity_data;
+    }
+
+     /********************/
+
+
+    /********************/
+    //The function to create parallel coordinates
+    function generateParcoords(data){
+
+        // Insert a HTML inside of  <p id="ParcoordVis"></p>
+        document.getElementById("ParcoordVis").innerHTML = "<div id='Parcoord1' class='parcoords' style='height:450px;'></div>";
+
+        //colors for each subjects
+        var color = function(d) { return subjects_dict[d["Subject"]]; };
+
+        // Create parcoords variable, I initialization d3.parcoords.js here
+        var parcoords = d3.parcoords()("#Parcoord1")
+            .mode("queue") //progressive rendering
+            .color(color)
+            .alpha(0.5);
+
+
+        // Draw the parallel coordinates
+        parcoords
+            .data(data)
+            .render()
+            .hideAxis(["Title","*Image","Actor","Actress","Director"])
+            .reorderable()
+            .brushMode("1D-axes");  // enable brushing
+
+        //Array for top 20 rows
+        var top20 = topDatas(data);
+
+        // Create a d3.divgrid.js initialization
+        var grid = d3.divgrid();
+
+        //Create data table, mouse over a row and it will highlighting
+        d3.select("#grid")
+            .datum(top20)
+            .call(grid)
+            .selectAll(".row")
+            .on({
+              "mouseover": function(d) { parcoords.highlight([d]) },
+              "mouseout": parcoords.unhighlight
+            });
+
+        // Update data table on brush event
+        parcoords.on("brush", function(d) {
+            d3.select("#grid")
+              .datum(d)
+              .call(grid)
+              .selectAll(".row")
+              .on({
+                "mouseover": function(d) {parcoords.highlight([d])},
+                "mouseout": parcoords.unhighlight
+              });
+        });
+    }
+    /********************/
+
+    /********************/
+    //The function to create bar chart
+    function generateBarchart(data){
+
+        // Insert a HTML inside of <p id="ChartViz"></p>
+        document.getElementById("ChartViz").innerHTML = " <svg id='Barchart2' class='chart' ></svg>";
+         ///////////////////////
+          // Chart Size Setup
+          var margin = { top: 35, right: 0, bottom: 30, left: 40 };
+
+          var width = 840 - margin.left - margin.right;
+          var height = 500 - margin.top - margin.bottom;
+
+
+          var chart = d3.select(".chart")
+              .attr("width", 1000)
+              .attr("height", 500)
+            .append("g")
+              .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+          ///////////////////////
+          // Scales
+          var x = d3.scale.ordinal()
+              .domain(data.map(function(d) { return d['Subject']; }))
+              .rangeRoundBands([0, width], .1);
+
+          var y = d3.scale.linear()
+              .domain([0, d3.max(data, function(d) { return d['Average']; }) * 1.1])
+              .range([height, 0]);
+
+          ///////////////////////
+          // Set up X axis
+          var xAxis = d3.svg.axis()
+              .scale(x)
+              .orient("bottom");
+
+          // Set up Y axis
+          var yAxis = d3.svg.axis()
+              .scale(y)
+              .orient("left");
+
+          chart.append("g")
+              .attr("class", "x axis")
+              .attr("transform", "translate(0," + height + ")")
+              .call(xAxis);
+
+          chart.append("g")
+              .attr("class", "y axis")
+              .call(yAxis);
+
+          // Append Label for y axis
+          chart.append("text")
+              .attr("text-anchor", "end")
+              .attr("x", width)
+              .attr("y", height+30)
+              .text("Subjects")
+              .attr("font-size", "13px")
+              .call(xAxis);
+
+          // Append Label for x axis
+          chart.append("text")
+            .attr("text-anchor", "end")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -margin.left+10)
+            .attr("x", -margin.top)
+            .text("Average popularity")
+            .attr("font-size", "13px")
+            .call(yAxis);
+
+          // Bars
+          var bar = chart.selectAll(".bar")
+              .data(data)
+              .enter()
+              .append("rect")
+              .attr("class", "bar")
+              .attr("x", function(d) { return x(d['Subject']); })
+              .attr("y", height)
+              .attr("width", x.rangeBand())
+              .attr("height", 0)
+              .attr('fill',function (d) {
+                  return subjects_dict[d["Subject"]]
+              });
+
+          bar.transition()
+              .duration(1500)
+              .ease("elastic")
+              .attr("y", function(d) { return y(d['Average']); })
+              .attr("height", function(d) { return height - y(d['Average']); });
+
+    }
+     /********************/
+
+
+</script>
+
+</html>
